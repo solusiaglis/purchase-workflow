@@ -66,7 +66,7 @@ class PurchaseRequestLine(models.Model):
         store=True,
     )
     date_start = fields.Date(related="request_id.date_start", store=True)
-    description = fields.Text(
+    description = fields.Html(
         related="request_id.description",
         string="PR Description",
         store=True,

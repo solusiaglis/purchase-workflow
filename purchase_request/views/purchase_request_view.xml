@@ -109,6 +109,9 @@
                             attrs="{'readonly': [('is_name_editable','=', False)]}"
                         />
                     </h1>
+
+
+
                     <group>
                         <group>
                             <field
@@ -124,10 +127,6 @@
                             <field
                                 name="origin"
                                 class="oe_inline"
-                                attrs="{'readonly': [('is_editable','=', False)]}"
-                            />
-                            <field
-                                name="description"
                                 attrs="{'readonly': [('is_editable','=', False)]}"
                             />
                             <field
@@ -152,6 +151,16 @@
                             />
                         </group>
                     </group>
+
+                     <group>
+                        <field
+                            name="description"
+                            attrs="{'readonly': [('is_editable','=', False)]}"
+                        />
+                    </group>
+
+
+
                     <notebook>
                         <page string="Products">
                             <field name="line_ids">

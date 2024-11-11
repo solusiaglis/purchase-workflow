@@ -91,7 +91,7 @@ class PurchaseRequest(models.Model):
         ],
         index=True,
     )
-    description = fields.Text(string="Description")
+    description = fields.Html(string="Description")
     company_id = fields.Many2one(
         comodel_name="res.company",
         string="Company",

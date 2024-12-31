@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_purchase_request_form_inherit_expense" model="ir.ui.view">
+        <field name="name">purchase.request.form.inherit.expense</field>
+        <field name="model">purchase.request</field>
+        <field name="inherit_id" ref="purchase_request.view_purchase_request_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="%(action_purchase_request_line_make_expense)d"
+                        string="Create Expense"
+                        states="approved"
+                        context="{'active_model': 'purchase.request.line', 'active_ids': line_ids}"
+                        type="action"/>
+                <button name="%(action_purchase_request_line_make_advance)d"
+                        string="Create Advance"
+                        states="approved"
+                        context="{'active_model': 'purchase.request.line', 'active_ids': line_ids}"
+                        type="action"/>
+            </xpath>
+
+            <div name="button_box" position="inside">
+                <button name="action_view_expense_sheets" 
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-money"
+                        attrs="{'invisible': [('expense_count', '=', 0)]}">
+                    <field name="expense_count" widget="statinfo" string="Expenses"/>
+                </button>
+            </div>
+        </field>
+    </record>
+</odoo>
+

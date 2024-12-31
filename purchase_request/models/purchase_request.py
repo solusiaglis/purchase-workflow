@@ -237,7 +237,7 @@ class PurchaseRequest(models.Model):
 
     @api.model
     def create(self, vals):
-        if vals.get("name", _("New")) == _("New"):
+        if vals.get("name", _("Newnnnn")) == _("New"):
             vals["name"] = self._get_default_name()
         request = super(PurchaseRequest, self).create(vals)
         if vals.get("assigned_to"):

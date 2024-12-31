@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_purchase_request_line_make_expense_sheet,access.purchase.request.line.make.expense.sheet,model_purchase_request_line_make_expense_sheet,purchase_request.group_purchase_request_user,1,1,1,1
+access_purchase_request_line_make_expense,access.purchase.request.line.make.expense,model_purchase_request_line_make_expense,purchase_request.group_purchase_request_user,1,1,1,1
+access_purchase_request_line_make_advance_sheet,access.purchase.request.line.make.advance.sheet,model_purchase_request_line_make_advance_sheet,purchase_request.group_purchase_request_user,1,1,1,1
+access_purchase_request_line_make_advance,access.purchase.request.line.make.advance,model_purchase_request_line_make_advance,purchase_request.group_purchase_request_user,1,1,1,1

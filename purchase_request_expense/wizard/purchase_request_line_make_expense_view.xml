@@ -1,27 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- Regular Expense Form View -->
-    <record id="view_purchase_request_line_make_expense_sheet" model="ir.ui.view">
-        <field name="name">purchase.request.line.make.expense.sheet.form</field>
-        <field name="model">purchase.request.line.make.expense.sheet</field>
+    <record id="view_purchase_request_line_make_expense" model="ir.ui.view">
+        <field name="name">purchase.request.line.make.expense.form</field>
+        <field name="model">purchase.request.line.make.expense</field>
         <field name="arch" type="xml">
-            <form string="Create Expense Sheet">
+            <form string="Create Expense">
                 <group>
                     <field name="employee_id"/>
                 </group>
                 <field name="item_ids" nolabel="1">
                     <tree create="false" editable="bottom">
-                        <field name="line_id" readonly="1"/>
+                        <field name="request_id"/>
                         <field name="product_id" readonly="1" required="1" force_save="1"/>
                         <field name="name"/>
                         <field name="product_qty"/>
-                        <!-- <field name="product_uom_id" groups="uom.group_uom"/> -->
+                        <field name="product_uom_id" groups="uom.group_uom"/>
                         <field name="estimated_cost"/>
+                        <field name="line_id"/>
+                        <field name="line_id_display" readonly="1"/>
+
                     </tree>
                 </field>
                 <footer>
-                    <button name="make_expense_sheet" 
-                            string="Create Expense Sheet" 
+                    <button name="make_expense" 
+                            string="Create Expense" 
                             type="object" 
                             class="btn-primary"/>
                     <button special="cancel" string="Cancel" class="btn-secondary"/>
@@ -32,11 +35,14 @@
 
     <!-- Regular Expense Action -->
     <record id="action_purchase_request_line_make_expense" model="ir.actions.act_window">
-        <field name="name">Create Expense Sheet</field>
+        <field name="name">Create Expense</field>
         <field name="type">ir.actions.act_window</field>
-        <field name="res_model">purchase.request.line.make.expense.sheet</field>
+        <field name="res_model">purchase.request.line.make.expense</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
+        <field name="binding_model_id"
+               ref="purchase_request.model_purchase_request_line"
+        />
     </record>
 
 </odoo>

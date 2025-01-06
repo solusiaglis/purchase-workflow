@@ -10,11 +10,11 @@ class PurchaseRequest(models.Model):
         compute='_compute_expense_count',
         store=False
     )
-    expense_ids = fields.One2many(
-        'hr.expense.sheet',
-        'purchase_request_id',
-        string='Expenses'
-    )
+    # expense_ids = fields.One2many(
+    #     comodel_name="hr.expense.sheet",
+    #     inverse_name="purchase_request_id",
+    #     string='Expenses'
+    # )
     
     @api.model
     def _init_column(self, column_name):
@@ -43,22 +43,22 @@ class PurchaseRequest(models.Model):
     
     
     def _compute_expense_count(self):
-        for request in self:
-            request.expense_count = len(request.expense_ids)
+        for rec in self:
+            rec.expense_count = len(rec.mapped("line_ids.expense_ids"))
 
-    def action_view_expense_sheets(self):
-        self.ensure_one()
-        action = self.env["ir.actions.actions"]._for_xml_id("hr_expense.action_hr_expense_sheet_all")
-        action['domain'] = [('purchase_request_id', '=', self.id)]
-        action['views'] = [
-            (self.env.ref('hr_expense.view_hr_expense_sheet_tree').id, 'tree'),
-            (False, 'form')
-        ]
-        if len(self.expense_ids) == 1:
-            action['view_mode'] = 'form'
-            action['views'] = [(False, 'form')]
-            action['res_id'] = self.expense_ids.id
-        return action
+    # def action_view_expense(self):
+    #     self.ensure_one()
+    #     action = self.env["ir.actions.actions"]._for_xml_id("hr_expense.action_hr_expense_sheet_all")
+    #     action['domain'] = [('purchase_request_id', '=', self.id)]
+    #     action['views'] = [
+    #         (self.env.ref('hr_expense.view_hr_expense_sheet_tree').id, 'tree'),
+    #         (False, 'form')
+    #     ]
+    #     if len(self.expense_ids) == 1:
+    #         action['view_mode'] = 'form'
+    #         action['views'] = [(False, 'form')]
+    #         action['res_id'] = self.expense_ids.id
+    #     return action
     
         
     def check_products(self):
@@ -68,3 +68,5 @@ class PurchaseRequest(models.Model):
                 raise UserError(_("Line '%s' has no product set.") % line.name)
             if not line.product_id.can_be_expensed:
                 raise UserError(_("Product '%s' is not configured to be expensed.") % line.product_id.name)
+            
+            

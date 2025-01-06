@@ -1,2 +1,2 @@
-from . import expense_sheet
+from . import hr_expense
 from . import purchase_request

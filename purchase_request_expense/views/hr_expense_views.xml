@@ -1,29 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Inherit Expense Form View -->
-    <record id="hr_expense_form_view_inherit" model="ir.ui.view">
-        <field name="name">hr.expense.form.inherit</field>
+    <!-- Extend HR Expense Form View -->
+    <record id="hr_expense_view_form_inherited" model="ir.ui.view">
+        <field name="name">hr.expense.view.form.inherited</field>
         <field name="model">hr.expense</field>
         <field name="inherit_id" ref="hr_expense.hr_expense_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='employee_id']" position="after">
+            <xpath expr="//field[@name='reference']" position="after">
                 <field name="purchase_request_line_id" 
-                       readonly="1" 
-                       attrs="{'invisible': [('purchase_request_line_id', '=', False)]}"/>
+                       attrs="{'invisible': [('purchase_request_line_id', '=', False)]}"
+                       options="{'no_create': True}"
+                       groups="purchase_request.group_purchase_request_user"/>
             </xpath>
         </field>
     </record>
 
-    <!-- Inherit Expense Sheet Form View -->
-    <record id="hr_expense_sheet_form_view_inherit" model="ir.ui.view">
-        <field name="name">hr.expense.sheet.form.inherit</field>
-        <field name="model">hr.expense.sheet</field>
-        <field name="inherit_id" ref="hr_expense.view_hr_expense_sheet_form"/>
+    <!-- Extend HR Expense Tree View -->
+    <record id="hr_expense_view_tree_inherited" model="ir.ui.view">
+        <field name="name">hr.expense.view.tree.inherited</field>
+        <field name="model">hr.expense</field>
+        <field name="inherit_id" ref="hr_expense.hr_expense_view_expenses_analysis_tree"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='employee_id']" position="after">
-                <field name="purchase_request_id" 
-                       readonly="1" 
-                       attrs="{'invisible': [('purchase_request_id', '=', False)]}"/>
+            <xpath expr="//field[@name='reference']" position="after">
+                <field name="purchase_request_line_id" 
+                       optional="show"
+                       groups="purchase_request.group_purchase_request_user"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extend HR Expense Search View -->
+    <record id="hr_expense_view_search_inherited" model="ir.ui.view">
+        <field name="name">hr.expense.view.search.inherited</field>
+        <field name="model">hr.expense</field>
+        <field name="inherit_id" ref="hr_expense.hr_expense_view_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="purchase_request_line_id"/>
+            </xpath>
+            <xpath expr="//group" position="inside">
+                <filter string="Purchase Request Line" 
+                        name="groupby_purchase_request_line" 
+                        domain="[]" 
+                        context="{'group_by': 'purchase_request_line_id'}"/>
             </xpath>
         </field>
     </record>

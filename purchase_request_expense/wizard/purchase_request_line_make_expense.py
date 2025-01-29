@@ -22,17 +22,12 @@ class PurchaseRequestLineMakeExpense(models.TransientModel):
 
     @api.model
     def _prepare_item(self, line):
-        advance_product = self.env.ref("hr_expense_advance_clearing.product_emp_advance", raise_if_not_found=False)
-        if advance_product and line.product_id.id == advance_product.id:
-            return False
-        
         product = line.product_id
         if not product:
             # If no product, try to find a default expense product
             product = self.env['product.product'].search([
                 ('can_be_expensed', '=', True),
                 ('type', '=', 'service'),
-                ('id', '!=', advance_product.id if advance_product else False)
             ], limit=1)
             if not product:
                 return False
@@ -51,7 +46,6 @@ class PurchaseRequestLineMakeExpense(models.TransientModel):
         }
         return vals
 
-    
     @api.model
     def _check_valid_request_line(self, request_line_ids):
         picking_type = False
@@ -84,10 +78,8 @@ class PurchaseRequestLineMakeExpense(models.TransientModel):
             else:
                 picking_type = line_picking_type
 
-            
     @api.model  
     def get_items(self, request_line_ids):
-
         request_line_obj = self.env["purchase.request.line"]
         items = []
         request_lines = request_line_obj.browse(request_line_ids)
@@ -99,7 +91,6 @@ class PurchaseRequestLineMakeExpense(models.TransientModel):
         if not items:
             raise UserError(_("No products that can be expensed were found in the selected lines."))
         return items
-    
     
     @api.model
     def default_get(self, fields):
@@ -124,6 +115,10 @@ class PurchaseRequestLineMakeExpense(models.TransientModel):
         if not item.product_id:
             raise UserError(_('Please select a product for the line with description: %s') % item.name)
         
+        # Check if the product is an advance product
+        advance_product = self.env.ref("hr_expense_advance_clearing.product_emp_advance", raise_if_not_found=False)
+        is_advance = advance_product and item.product_id.id == advance_product.id
+        
         vals = {
             "name": item.name,
             "employee_id": self.employee_id.id,
@@ -133,7 +128,21 @@ class PurchaseRequestLineMakeExpense(models.TransientModel):
             "product_uom_id": item.product_uom_id.id,
             "reference": item.request_id.name if item.request_id else '',
             "purchase_request_line_id": item.line_id.id if item.line_id else False,
+            "advance": is_advance,  # Set advance field based on product type
         }
+
+        # If this is an advance expense, set the correct account
+        if is_advance and advance_product:
+            if advance_product.property_account_expense_id:
+                vals["account_id"] = advance_product.property_account_expense_id.id
+            else:
+                # If no specific account set on product, get from product category
+                category_account = advance_product.categ_id.property_account_expense_categ_id
+                if category_account:
+                    vals["account_id"] = category_account.id
+                else:
+                    raise UserError(_("No expense account found for advance product. Please configure it first."))
+
         return vals
     
     def make_expense(self):
@@ -165,8 +174,6 @@ class PurchaseRequestLineMakeExpense(models.TransientModel):
             expense_vals = self._prepare_expense(item)
             expense = expense_obj.create(expense_vals)
             expenses += expense
-            
-
 
         # Show the created expenses
         action = {
@@ -185,9 +192,6 @@ class PurchaseRequestLineMakeExpense(models.TransientModel):
             })
 
         return action
-
-    
-       
 
 class PurchaseRequestLineMakeExpenseItem(models.TransientModel):
     _name = "purchase.request.line.make.expense.item"
@@ -216,8 +220,8 @@ class PurchaseRequestLineMakeExpenseItem(models.TransientModel):
         comodel_name="product.product",
         string="Product",
         readonly=False,
-        domain=[('can_be_expensed','=',True)],
-        required=True, 
+        domain=[('can_be_expensed', '=', True)],
+        required=True,
     )
     
     @api.onchange('line_id')
@@ -233,12 +237,10 @@ class PurchaseRequestLineMakeExpenseItem(models.TransientModel):
                 product = self.env['product.product'].search([
                     ('can_be_expensed', '=', True),
                     ('type', '=', 'service'),
-                    ('id', '!=', advance_product.id if advance_product else False)
                 ], limit=1)
                 if product:
                     self.product_id = product.id
 
-    
     name = fields.Char(string="Description", required=True)
     product_qty = fields.Float(
         string="Quantity to purchase",

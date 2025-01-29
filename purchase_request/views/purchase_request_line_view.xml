@@ -426,6 +426,7 @@
                         for="partner_id"
                         attrs="{'readonly': True}"
                         class="oe_edit_only"
+                        optional="show"/>
                     />
                     <h2>
                         <field name="partner_id" attrs="{'readonly': True}" />

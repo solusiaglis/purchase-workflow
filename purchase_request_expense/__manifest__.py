@@ -15,7 +15,7 @@
         'security/ir.model.access.csv',
         'views/hr_expense_views.xml',
         'wizard/purchase_request_line_make_expense_view.xml',
-        # 'wizard/purchase_request_line_make_advance_sheet_view.xml',
+        'views/purchase_request_line_views.xml',
         'views/purchase_request_views.xml',
     ],
     'installable': True,

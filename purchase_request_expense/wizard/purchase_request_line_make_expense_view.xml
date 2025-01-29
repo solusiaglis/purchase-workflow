@@ -18,7 +18,6 @@
                         <field name="product_uom_id" groups="uom.group_uom"/>
                         <field name="estimated_cost"/>
                         <field name="line_id"/>
-                        <field name="line_id_display" readonly="1"/>
 
                     </tree>
                 </field>

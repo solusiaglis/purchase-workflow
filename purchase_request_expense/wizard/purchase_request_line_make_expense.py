@@ -22,7 +22,6 @@ class PurchaseRequestLineMakeExpense(models.TransientModel):
 
     @api.model
     def _prepare_item(self, line):
-        _logger.info("Line ID: %s, Nomor PR: %s", line.id, line.request_id.id)
         advance_product = self.env.ref("hr_expense_advance_clearing.product_emp_advance", raise_if_not_found=False)
         if advance_product and line.product_id.id == advance_product.id:
             return False
@@ -50,7 +49,6 @@ class PurchaseRequestLineMakeExpense(models.TransientModel):
             "product_uom_id": line.product_uom_id.id or product.uom_id.id,
             "estimated_cost": line.estimated_cost,
         }
-        _logger.info("Prepared item values: %s", vals)
         return vals
 
     
@@ -89,91 +87,40 @@ class PurchaseRequestLineMakeExpense(models.TransientModel):
             
     @api.model  
     def get_items(self, request_line_ids):
-        # Log the incoming request_line_ids
-        _logger.info("Processing request_line_ids: %s", request_line_ids)
+
         request_line_obj = self.env["purchase.request.line"]
         items = []
         request_lines = request_line_obj.browse(request_line_ids)
-        _logger.info("Request lines: %s", request_lines)
         self._check_valid_request_line(request_line_ids)
         for line in request_lines:
             item = self._prepare_item(line)
-            _logger.info("Prepared item from line %s: %s", line, item)
-            
             if item:
                 items.append([0, 0, item])
-        _logger.info("Final items: %s", items)
         if not items:
             raise UserError(_("No products that can be expensed were found in the selected lines."))
         return items
     
     
     @api.model
-    # def default_get(self, fields):
-    #     res = super().default_get(fields)
-    #     active_model = self._context.get('active_model', False)
-    #     request_line_ids = []
-    #     if active_model == 'purchase.request.line':
-    #         request_line_ids += self._context.get('active_ids', [])            
-    #     elif active_model == "purchase.request":
-    #         request_ids = self.env.context.get('active_ids', False)
-    #         request_line_ids += (
-    #             self.env[active_model].browse(request_ids).mapped("line_ids.id")
-    #         )
-    #     if not request_line_ids:
-    #         return res
-    #     res["item_ids"] = self.get_items(request_line_ids)
-    #     request_lines = self.env['purchase.request.line'].browse(request_line_ids)
-    #     return res
     def default_get(self, fields):
-        _logger.info("default_get called with fields: %s", fields)
         res = super().default_get(fields)
         active_model = self._context.get('active_model', False)
-        _logger.info("Active model: %s", active_model)
-        
         request_line_ids = []
         if active_model == 'purchase.request.line':
-            request_line_ids += self._context.get('active_ids', [])
-            _logger.info("Got request line IDs from active_ids: %s", request_line_ids)
+            request_line_ids += self._context.get('active_ids', [])            
         elif active_model == "purchase.request":
             request_ids = self.env.context.get('active_ids', False)
-            _logger.info("Got request IDs: %s", request_ids)
-            if request_ids:
-                lines = self.env[active_model].browse(request_ids).mapped("line_ids")
-                _logger.info("Found lines from requests: %s", lines)
-                request_line_ids += lines.ids
-                _logger.info("Added line IDs: %s", request_line_ids)
-                
+            request_line_ids += (
+                self.env[active_model].browse(request_ids).mapped("line_ids.id")
+            )
         if not request_line_ids:
-            _logger.warning("No request line IDs found")
             return res
-            
-        _logger.info("Getting items for request_line_ids: %s", request_line_ids)
         res["item_ids"] = self.get_items(request_line_ids)
-        _logger.info("res['items_ids']: %s", res["item_ids"])
+        request_lines = self.env['purchase.request.line'].browse(request_line_ids)
         return res
-    
 
     @api.model 
-    # def _prepare_expense(self, item):
-    #     _logger.info("Item name: %s, Product ID: %s, PR Line ID: %s",  item.name, item.product_id.id, item.line_id)
-    #     if not item.product_id:
-    #         raise UserError('Please select a product for all lines')
-        
-    #     return {
-    #         "name": item.name,
-    #         "employee_id": self.employee_id.id,
-    #         "product_id": item.product_id.id,
-    #         "unit_amount": item.estimated_cost / item.product_qty if item.product_qty else 0.0,
-    #         "quantity": item.product_qty,
-    #         "product_uom_id": item.product_uom_id.id,
-    #         "reference": item.request_id.name,
-    #         "purchase_request_line_id": item.line_id,
-    #     }
-    def _prepare_expense(self, item):
-        _logger.info("Preparing expense for item: %s", item)
-        _logger.info("Preparing expense for item with line_id: %s", item.line_id.id if item.line_id else 'No line')
-        
+    def _prepare_expense(self, item):        
         if not item.product_id:
             raise UserError(_('Please select a product for the line with description: %s') % item.name)
         
@@ -187,12 +134,8 @@ class PurchaseRequestLineMakeExpense(models.TransientModel):
             "reference": item.request_id.name if item.request_id else '',
             "purchase_request_line_id": item.line_id.id if item.line_id else False,
         }
-        _logger.info("Prepared expense values: %s", vals)
         return vals
     
-        
-
-
     def make_expense(self):
         """Create expenses from the wizard items."""
         self.ensure_one()
@@ -261,19 +204,6 @@ class PurchaseRequestLineMakeExpenseItem(models.TransientModel):
         comodel_name="purchase.request.line",
         string="Purchase Request Line"
     )
-    
-    line_id_display = fields.Integer(
-        string="Line ID",
-        compute="_compute_line_id_display",
-        store=True
-    )
-
-    @api.depends("line_id")
-    def _compute_line_id_display(self):
-        for record in self:
-            record.line_id_display = record.line_id.id if record.line_id else 0
-    
-    
     
     request_id = fields.Many2one(
         comodel_name="purchase.request",

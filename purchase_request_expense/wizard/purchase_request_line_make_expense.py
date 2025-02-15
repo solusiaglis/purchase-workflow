@@ -21,21 +21,20 @@ class PurchaseRequestLineMakeExpense(models.TransientModel):
     )
 
     @api.model
+    def _has_expense_advance_clearing(self):
+        """Check if hr_expense_advance_clearing module is installed"""
+        return 'hr_expense_advance_clearing' in self.env['ir.module.module']._installed()
+
+    
+    
+    @api.model
     def _prepare_item(self, line):
-        product = line.product_id
-        if not product:
-            # If no product, try to find a default expense product
-            product = self.env['product.product'].search([
-                ('can_be_expensed', '=', True),
-                ('type', '=', 'service'),
-            ], limit=1)
-            if not product:
-                return False
-                
-        if not product.can_be_expensed:
-            return False
+        if line.product_id and line.product_id.can_be_expensed:
+            product = line.product_id
+        else:
+            return False 
         
-        vals = {
+        return {
             "line_id": line.id,
             "request_id": line.request_id.id,
             "product_id": product.id,
@@ -43,8 +42,8 @@ class PurchaseRequestLineMakeExpense(models.TransientModel):
             "product_qty": line.pending_qty_to_receive or 1.0,
             "product_uom_id": line.product_uom_id.id or product.uom_id.id,
             "estimated_cost": line.estimated_cost,
+            "analytic_account_id": line.analytic_account_id.id if line.analytic_account_id else False, 
         }
-        return vals
 
     @api.model
     def _check_valid_request_line(self, request_line_ids):
@@ -77,6 +76,17 @@ class PurchaseRequestLineMakeExpense(models.TransientModel):
                 )
             else:
                 picking_type = line_picking_type
+                
+    @api.model
+    def check_group(self, request_lines):
+        if len(list(set(request_lines.mapped("request_id.group_id")))) > 1:
+            raise UserError(
+                _(
+                    "You cannot create a single purchase order from "
+                    "purchase requests that have different procurement group."
+                )
+            )
+
 
     @api.model  
     def get_items(self, request_line_ids):
@@ -84,6 +94,7 @@ class PurchaseRequestLineMakeExpense(models.TransientModel):
         items = []
         request_lines = request_line_obj.browse(request_line_ids)
         self._check_valid_request_line(request_line_ids)
+        self.check_group(request_lines)
         for line in request_lines:
             item = self._prepare_item(line)
             if item:
@@ -91,7 +102,7 @@ class PurchaseRequestLineMakeExpense(models.TransientModel):
         if not items:
             raise UserError(_("No products that can be expensed were found in the selected lines."))
         return items
-    
+        
     @api.model
     def default_get(self, fields):
         res = super().default_get(fields)
@@ -128,23 +139,25 @@ class PurchaseRequestLineMakeExpense(models.TransientModel):
             "product_uom_id": item.product_uom_id.id,
             "reference": item.request_id.name if item.request_id else '',
             "purchase_request_line_id": item.line_id.id if item.line_id else False,
-            "advance": is_advance,  # Set advance field based on product type
+            "analytic_account_id": item.line_id.analytic_account_id.id if item.line_id.analytic_account_id else False,
         }
 
-        # If this is an advance expense, set the correct account
-        if is_advance and advance_product:
-            if advance_product.property_account_expense_id:
-                vals["account_id"] = advance_product.property_account_expense_id.id
-            else:
-                # If no specific account set on product, get from product category
-                category_account = advance_product.categ_id.property_account_expense_categ_id
-                if category_account:
-                    vals["account_id"] = category_account.id
+        # Only add advance-related fields if the module is installed
+        if self._has_expense_advance_clearing():
+            advance_product = self.env.ref("hr_expense_advance_clearing.product_emp_advance", raise_if_not_found=False)
+            if advance_product and item.product_id.id == advance_product.id:
+                vals["advance"] = True
+                if advance_product.property_account_expense_id:
+                    vals["account_id"] = advance_product.property_account_expense_id.id
                 else:
-                    raise UserError(_("No expense account found for advance product. Please configure it first."))
+                    category_account = advance_product.categ_id.property_account_expense_categ_id
+                    if category_account:
+                        vals["account_id"] = category_account.id
+                    else:
+                        raise UserError(_("No expense account found for advance product. Please configure it first."))
 
         return vals
-    
+        
     def make_expense(self):
         """Create expenses from the wizard items."""
         self.ensure_one()
@@ -222,6 +235,13 @@ class PurchaseRequestLineMakeExpenseItem(models.TransientModel):
         readonly=False,
         domain=[('can_be_expensed', '=', True)],
         required=True,
+    )
+    
+    analytic_account_id = fields.Many2one(
+        comodel_name="account.analytic.account",
+        string="Analytic Account",
+        related="line_id.analytic_account_id",
+        readonly=False,
     )
     
     @api.onchange('line_id')
